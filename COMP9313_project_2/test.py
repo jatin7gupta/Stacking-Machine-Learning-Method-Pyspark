@@ -52,28 +52,25 @@ svm_2 = LinearSVC(featuresCol='features', labelCol='label_2', predictionCol='svm
 # build pipeline to generate predictions from base classifiers, will be used in task 1.3
 gen_base_pred_pipeline = Pipeline(stages=[nb_0, nb_1, nb_2, svm_0, svm_1, svm_2])
 gen_base_pred_pipeline_model = gen_base_pred_pipeline.fit(training_set)
-# to check the output from task 1
-x= gen_base_pred_pipeline_model.transform(training_set)
-print(x.show(10))
-#
-# # task 1.2
-# meta_features = gen_meta_features(training_set, nb_0, nb_1, nb_2, svm_0, svm_1, svm_2)
-#
-# # build onehotencoder and vectorassembler pipeline
-# onehot_encoder = OneHotEncoderEstimator(inputCols=['nb_pred_0', 'nb_pred_1', 'nb_pred_2', 'svm_pred_0', 'svm_pred_1', 'svm_pred_2', 'joint_pred_0', 'joint_pred_1', 'joint_pred_2'], outputCols=['vec{}'.format(i) for i in range(9)])
-# vector_assembler = VectorAssembler(inputCols=['vec{}'.format(i) for i in range(9)], outputCol='meta_features')
-# gen_meta_feature_pipeline = Pipeline(stages=[onehot_encoder, vector_assembler])
-# gen_meta_feature_pipeline_model = gen_meta_feature_pipeline.fit(meta_features)
-# meta_features = gen_meta_feature_pipeline_model.transform(meta_features)
-#
-# # train the meta clasifier
-# lr_model = LogisticRegression(featuresCol='meta_features', labelCol='label', predictionCol='final_prediction', maxIter=20, regParam=1., elasticNetParam=0)
-# meta_classifier = lr_model.fit(meta_features)
-#
-# # task 1.3
-# pred_test = test_prediction(test_data, base_features_pipeline_model, gen_base_pred_pipeline_model, gen_meta_feature_pipeline_model, meta_classifier)
-#
-# # Evaluation
-# evaluator = MulticlassClassificationEvaluator(predictionCol="prediction",metricName='f1')
-# print(evaluator.evaluate(pred_test, {evaluator.predictionCol:'final_prediction'}))
+
+# task 1.2
+meta_features = gen_meta_features(training_set, nb_0, nb_1, nb_2, svm_0, svm_1, svm_2)
+
+# build onehotencoder and vectorassembler pipeline
+onehot_encoder = OneHotEncoderEstimator(inputCols=['nb_pred_0', 'nb_pred_1', 'nb_pred_2', 'svm_pred_0', 'svm_pred_1', 'svm_pred_2', 'joint_pred_0', 'joint_pred_1', 'joint_pred_2'], outputCols=['vec{}'.format(i) for i in range(9)])
+vector_assembler = VectorAssembler(inputCols=['vec{}'.format(i) for i in range(9)], outputCol='meta_features')
+gen_meta_feature_pipeline = Pipeline(stages=[onehot_encoder, vector_assembler])
+gen_meta_feature_pipeline_model = gen_meta_feature_pipeline.fit(meta_features)
+meta_features = gen_meta_feature_pipeline_model.transform(meta_features)
+
+# train the meta clasifier
+lr_model = LogisticRegression(featuresCol='meta_features', labelCol='label', predictionCol='final_prediction', maxIter=20, regParam=1., elasticNetParam=0)
+meta_classifier = lr_model.fit(meta_features)
+
+# task 1.3
+pred_test = test_prediction(test_data, base_features_pipeline_model, gen_base_pred_pipeline_model, gen_meta_feature_pipeline_model, meta_classifier)
+
+# Evaluation
+evaluator = MulticlassClassificationEvaluator(predictionCol="prediction",metricName='f1')
+print(evaluator.evaluate(pred_test, {evaluator.predictionCol:'final_prediction'}))
 spark.stop()

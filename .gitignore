@@ -2,3 +2,5 @@
 .idea/*
 *checkpoint.py
 *checkpoint.ipynb
+*.pyc
+*checkpoint.csv

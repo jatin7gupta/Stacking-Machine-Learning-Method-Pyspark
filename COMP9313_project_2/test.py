@@ -11,7 +11,8 @@ from pyspark.ml.classification import LogisticRegression, LinearSVC, NaiveBayes
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 
 from submission import base_features_gen_pipeline, gen_meta_features, test_prediction
-
+from time import time
+start_time = time()
 import random
 rseed = 1024
 random.seed(rseed)
@@ -73,4 +74,6 @@ pred_test = test_prediction(test_data, base_features_pipeline_model, gen_base_pr
 # Evaluation
 evaluator = MulticlassClassificationEvaluator(predictionCol="prediction",metricName='f1')
 print(evaluator.evaluate(pred_test, {evaluator.predictionCol:'final_prediction'}))
+end_time = time()
 spark.stop()
+print('running time:', end_time - start_time)

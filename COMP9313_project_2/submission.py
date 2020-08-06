@@ -12,7 +12,7 @@ def joint(a, b):
         return 1
     elif a == 1 and b == 0:
         return 2
-    else:
+    elif a == 1 and b == 1:
         return 3
 
 
@@ -33,7 +33,7 @@ def base_features_gen_pipeline(input_descript_col="descript", input_category_col
         def _transform(self, df: DataFrame) -> DataFrame:
             return df.select(*self.outputCols)
 
-    selector = Selector(outputCols=['id' ,output_feature_col, output_label_col])
+    selector = Selector(outputCols=['id', output_feature_col, output_label_col])
     # build the pipeline
     pipeline = Pipeline(stages=[word_tokenizer, count_vectors, label_maker, selector])
     return pipeline
@@ -50,76 +50,86 @@ def gen_meta_features(training_df, nb_0, nb_1, nb_2, svm_0, svm_1, svm_2):
         # nb
 
         # 0
-        lr_model = nb_0.fit(c_train)
-        lr_pred = lr_model.transform(c_test)
-        if 0 not in nb_result:
-            nb_result[0] = lr_pred.select(['id', 'nb_pred_0'])
-        else:
-            nb_result[0].union(lr_pred.select(['id', 'nb_pred_0']))
+        nb_result = save_answer(c_test, c_train, nb_0, nb_result, 'nb_pred_0', 0)
+        nb_result = save_answer(c_test, c_train, nb_1, nb_result, 'nb_pred_1', 1)
+        nb_result = save_answer(c_test, c_train, nb_2, nb_result, 'nb_pred_2', 2)
 
-        # 1
-        lr_model = nb_1.fit(c_train)
-        lr_pred = lr_model.transform(c_test)
-        if 1 not in nb_result:
-            nb_result[1] = lr_pred.select(['id', 'nb_pred_1'])
-        else:
-            nb_result[1].union(lr_pred.select(['id', 'nb_pred_1']))
+        svm_result = save_answer(c_test, c_train, svm_0, svm_result, 'svm_pred_0', 0)
+        svm_result = save_answer(c_test, c_train, svm_1, svm_result, 'svm_pred_1', 1)
+        svm_result = save_answer(c_test, c_train, svm_2, svm_result, 'svm_pred_2', 2)
 
-        # 2
-        lr_model = nb_2.fit(c_train)
-        lr_pred = lr_model.transform(c_test)
-        if 2 not in nb_result:
-            nb_result[2] = lr_pred.select(['id', 'nb_pred_2'])
-        else:
-            nb_result[2].union(lr_pred.select(['id', 'nb_pred_2']))
+        # # 1
+        # lr_model_1 = nb_1.fit(c_train)
+        # lr_pred_1 = lr_model_1.transform(c_test)
+        # if 1 not in nb_result:
+        #     nb_result[1] = lr_pred_1.select(['id', 'nb_pred_1'])
+        # else:
+        #     nb_result[1].union(lr_pred_1.select(['id', 'nb_pred_1']))
+        #
+        # # 2
+        # lr_model_2 = nb_2.fit(c_train)
+        # lr_pred_2 = lr_model_2.transform(c_test)
+        # if 2 not in nb_result:
+        #     nb_result[2] = lr_pred_2.select(['id', 'nb_pred_2'])
+        # else:
+        #     nb_result[2].union(lr_pred_2.select(['id', 'nb_pred_2']))
+        #
+        # # svm
+        #
+        # # 0
+        # svm_model_0 = svm_0.fit(c_train)
+        # svm_pred_0 = svm_model_0.transform(c_test)
+        # if 0 not in svm_result:
+        #     svm_result[0] = svm_pred_0.select(['id', 'svm_pred_0'])
+        # else:
+        #     svm_result[0].union(svm_pred_0.select(['id', 'svm_pred_0']))
+        #
+        # # 1
+        # svm_model_1 = svm_1.fit(c_train)
+        # svm_pred_1 = svm_model_1.transform(c_test)
+        # if 1 not in svm_result:
+        #     svm_result[1] = svm_pred_1.select(['id', 'svm_pred_1'])
+        # else:
+        #     svm_result[1].union(svm_pred_1.select(['id', 'svm_pred_1']))
+        #
+        # # 2
+        # svm_model_2 = svm_2.fit(c_train)
+        # svm_pred_2 = svm_model_2.transform(c_test)
+        # if 2 not in svm_result:
+        #     svm_result[2] = svm_pred_2.select(['id', 'svm_pred_2'])
+        # else:
+        #     svm_result[2].union(svm_pred_2.select(['id', 'svm_pred_2']))
 
-        # svm
+    training_df = training_df.join(nb_result[0], on=['id'])
+    training_df = training_df.join(nb_result[1], on=['id'])
+    training_df = training_df.join(nb_result[2], on=['id'])
 
-        # 0
-        svm_model = svm_0.fit(c_train)
-        svm_pred = svm_model.transform(c_test)
-        if 0 not in svm_result:
-            svm_result[0] = svm_pred.select(['id', 'svm_pred_0'])
-        else:
-            svm_result[0].union(svm_pred.select(['id', 'svm_pred_0']))
-
-        # 1
-        svm_model = svm_1.fit(c_train)
-        svm_pred = svm_model.transform(c_test)
-        if 1 not in svm_result:
-            svm_result[1] = svm_pred.select(['id', 'svm_pred_1'])
-        else:
-            svm_result[1].union(svm_pred.select(['id', 'svm_pred_1']))
-
-        # 2
-        svm_model = svm_2.fit(c_train)
-        svm_pred = svm_model.transform(c_test)
-        if 2 not in svm_result:
-            svm_result[2] = svm_pred.select(['id', 'svm_pred_2'])
-        else:
-            svm_result[2].union(svm_pred.select(['id', 'svm_pred_2']))
-
-    training_df = training_df.join(nb_result[0], training_df.id == nb_result[0].id).select(training_df["*"], nb_result[0]["nb_pred_0"])
-    training_df = training_df.join(nb_result[1], training_df.id == nb_result[1].id).select(training_df["*"], nb_result[1]["nb_pred_1"])
-    training_df = training_df.join(nb_result[2], training_df.id == nb_result[2].id).select(training_df["*"], nb_result[2]["nb_pred_2"])
-
-    training_df = training_df.join(svm_result[0], training_df.id == svm_result[0].id).select(training_df["*"], svm_result[0]["svm_pred_0"])
-    training_df = training_df.join(svm_result[1], training_df.id == svm_result[1].id).select(training_df["*"], svm_result[1]["svm_pred_1"])
-    training_df = training_df.join(svm_result[2], training_df.id == svm_result[2].id).select(training_df["*"], svm_result[2]["svm_pred_2"])
+    training_df = training_df.join(svm_result[0], on=['id'])
+    training_df = training_df.join(svm_result[1], on=['id'])
+    training_df = training_df.join(svm_result[2], on=['id'])
 
     training_df = training_df.withColumn('joint_pred_0', (joint_udf(training_df['nb_pred_0'], training_df['svm_pred_0']).cast(DoubleType())))
     training_df = training_df.withColumn('joint_pred_1', (joint_udf(training_df['nb_pred_1'], training_df['svm_pred_1']).cast(DoubleType())))
     training_df = training_df.withColumn('joint_pred_2', (joint_udf(training_df['nb_pred_2'], training_df['svm_pred_2']).cast(DoubleType())))
     return training_df
 
+
+def save_answer(c_test, c_train, model, result_dict, col, label_number):
+    fitted_model = model.fit(c_train)
+    pred = fitted_model.transform(c_test)
+    if label_number not in result_dict:
+        result_dict[label_number] = pred.select(['id', col])
+    else:
+        result_dict[label_number].union(pred.select(['id', col]))
+    return result_dict
+
+
 def test_prediction(test_df, base_features_pipeline_model, gen_base_pred_pipeline_model, gen_meta_feature_pipeline_model, meta_classifier):
 
     # got features
-    # df = base_features_pipeline_model.fit(test_df)
     df = base_features_pipeline_model.transform(test_df)
 
     # get base pred
-    # base = gen_base_pred_pipeline_model.fit(df)
     base = gen_base_pred_pipeline_model.transform(df)
 
     # get meta features

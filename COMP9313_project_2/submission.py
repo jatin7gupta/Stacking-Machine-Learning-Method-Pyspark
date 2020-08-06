@@ -34,13 +34,13 @@ def base_features_gen_pipeline(input_descript_col="descript", input_category_col
     label_maker = StringIndexer(inputCol=input_category_col, outputCol=output_label_col)
 
     class Selector(Transformer):
-        def __init__(self, outputCols):
-            self.outputCols = outputCols
+        def __init__(self, output_cols):
+            self.outputCols = output_cols
 
         def _transform(self, df: DataFrame) -> DataFrame:
             return df.select(*self.outputCols)
 
-    selector = Selector(outputCols=['id', output_feature_col, output_label_col])
+    selector = Selector(output_cols=['id', output_feature_col, output_label_col])
 
     pipeline = Pipeline(stages=[word_tokenizer, count_vectors, label_maker, selector])
     return pipeline

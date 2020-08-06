@@ -2,7 +2,7 @@ from pyspark.ml.feature import Tokenizer, CountVectorizer, StringIndexer
 from pyspark.ml import Pipeline, Transformer
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import udf
-from pyspark.sql.types import DoubleType, IntegerType
+from pyspark.sql.types import DoubleType
 
 
 def joint(a, b):
@@ -19,22 +19,18 @@ def joint(a, b):
 def add_joint_predictions(base):
     joint_udf = udf(joint, DoubleType())
     base = base.withColumn('joint_pred_0',
-        joint_udf(base['nb_pred_0'], base['svm_pred_0']))
+                           joint_udf(base['nb_pred_0'], base['svm_pred_0']))
     base = base.withColumn('joint_pred_1',
-        joint_udf(base['nb_pred_1'], base['svm_pred_1']))
+                           joint_udf(base['nb_pred_1'], base['svm_pred_1']))
     base = base.withColumn('joint_pred_2',
-        joint_udf(base['nb_pred_2'], base['svm_pred_2']))
+                           joint_udf(base['nb_pred_2'], base['svm_pred_2']))
     return base
 
 
-def base_features_gen_pipeline(input_descript_col="descript", input_category_col="category", output_feature_col="features", output_label_col="label"):
-    # white space expression tokenizer
+def base_features_gen_pipeline(input_descript_col="descript", input_category_col="category",
+                               output_feature_col="features", output_label_col="label"):
     word_tokenizer = Tokenizer(inputCol=input_descript_col, outputCol="words")
-
-    # bag of words count
     count_vectors = CountVectorizer(inputCol="words", outputCol=output_feature_col)
-
-    # label indexer
     label_maker = StringIndexer(inputCol=input_category_col, outputCol=output_label_col)
 
     class Selector(Transformer):
@@ -45,9 +41,10 @@ def base_features_gen_pipeline(input_descript_col="descript", input_category_col
             return df.select(*self.outputCols)
 
     selector = Selector(outputCols=['id', output_feature_col, output_label_col])
-    # build the pipeline
+
     pipeline = Pipeline(stages=[word_tokenizer, count_vectors, label_maker, selector])
     return pipeline
+
 
 def gen_meta_features(training_df, nb_0, nb_1, nb_2, svm_0, svm_1, svm_2):
     nb_result = {}
@@ -86,11 +83,10 @@ def save_answer(c_test, c_train, model, result_dict, col, label_number):
     return result_dict
 
 
-def test_prediction(test_df, base_features_pipeline_model, gen_base_pred_pipeline_model, gen_meta_feature_pipeline_model, meta_classifier):
+def test_prediction(test_df, base_features_pipeline_model, gen_base_pred_pipeline_model,
+                    gen_meta_feature_pipeline_model, meta_classifier):
     df = base_features_pipeline_model.transform(test_df)
     base = gen_base_pred_pipeline_model.transform(df)
     base_joint_pred = add_joint_predictions(base)
     meta = gen_meta_feature_pipeline_model.transform(base_joint_pred)
     return meta_classifier.transform(meta)
-
-

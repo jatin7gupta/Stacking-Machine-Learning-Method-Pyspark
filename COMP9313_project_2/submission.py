@@ -89,4 +89,6 @@ def test_prediction(test_df, base_features_pipeline_model, gen_base_pred_pipelin
     base = gen_base_pred_pipeline_model.transform(df)
     base_joint_pred = add_joint_predictions(base)
     meta = gen_meta_feature_pipeline_model.transform(base_joint_pred)
-    return meta_classifier.transform(meta)
+    answer = meta_classifier.transform(meta)
+    cleaned_answer = answer.select('id', 'label', 'final_prediction')
+    return cleaned_answer
